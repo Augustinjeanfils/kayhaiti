@@ -275,7 +275,7 @@ function updateMapMarkers() {
         <div class="map-popup-price">${p.price}</div>
         <div class="map-popup-title">${p.title}</div>
         <div class="map-popup-loc">📍 ${p.location}</div>
-        <button class="map-popup-btn" onclick="openDetailModal(${p.id});document.getElementById('map-popup-btn-trigger').click()">
+        <button class="map-popup-btn" onclick="openDetailModal(${p.id})">
           Voir l'annonce →
         </button>
       </div>
