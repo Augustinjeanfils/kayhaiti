@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KayHaïti — Votre portail immobilier</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/> 
+<link rel="stylesheet" href="index.css">
+<!-- <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script> -->
+ <script src="index.js"></script>
+</head>
+<nav>
+  <div class="logo" onclick="showPage('home')">Kay<span>Haïti</span></div>
+  <div class="nav-links">
+    <a onclick="showPage('home');setFilter('vente',null)">Acheter</a>
+    <a onclick="showPage('home');setFilter('location',null)">Louer</a>
+    <a onclick="document.getElementById('map-section').scrollIntoView({behavior:'smooth'})">Carte</a>
+    <a id="nav-publish-link" onclick="showPublishPage()" style="display:none">Publier une annonce</a>
+    <div id="nav-guest" style="display:flex;gap:12px;align-items:center;">
+      <a class="nav-agent-btn" onclick="openLogin()">Connexion Agent / Admin</a>
+    </div>
+    <div id="nav-logged" style="display:none;">
+      <div class="nav-user-info">
+        <div class="nav-avatar" id="nav-avatar-initials">A</div>
+        <div>
+          <div class="nav-user-name" id="nav-user-name">Agent</div>
+          <div class="nav-role-badge" id="nav-role-badge">agent</div>
+        </div>
+        <button class="logout-btn" onclick="logout()">Déconnexion</button>
+      </div>
+    </div>
+  </div>
+</nav>
+ 
+<!-- ============ PAGE: HOME ============ -->
+<div id="page-home" class="page active">
+ 
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">N°1 en Haïti</div>
+    <h1>Trouvez votre<br><em>bien idéal</em></h1>
+    <p>Des milliers d'annonces à Port-au-Prince, Pétion-Ville, Laboule et partout en Haïti.</p>
+    <div class="search-box">
+      <div class="search-field">
+        <label>Type</label>
+        <select id="type-filter">
+          <option value="all">Tous</option>
+          <option value="vente">Vente</option>
+          <option value="location">Location</option>
+        </select>
+      </div>
+      <div class="search-field">
+        <label>Ville / Quartier</label>
+        <input type="text" id="search-input" placeholder="Ex: Pétion-Ville...">
+      </div>
+      <div class="search-field">
+        <label>Catégorie</label>
+        <select id="cat-filter">
+          <option value="all">Toutes</option>
+          <option value="villa">Villa</option>
+          <option value="maison">Maison</option>
+          <option value="appartement">Appartement</option>
+          <option value="terrain">Terrain</option>
+        </select>
+      </div>
+      <button class="search-btn" onclick="doSearch()">Rechercher</button>
+    </div>
+  </section>
+ 
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="stat-total">6</div><div class="stat-label">Annonces actives</div></div>
+    <div class="stat"><div class="stat-num">87</div><div class="stat-label">Agences partenaires</div></div>
+    <div class="stat"><div class="stat-num">320</div><div class="stat-label">Ventes ce mois</div></div>
+    <div class="stat"><div class="stat-num">15</div><div class="stat-label">Villes couvertes</div></div>
+  </div>
+ 
+  <!-- LISTINGS -->
+  <div class="section-header">
+    <div class="section-title">Annonces récentes</div>
+    <div class="toggle">
+      <button class="toggle-btn active">Grille</button>
+      <button class="toggle-btn" onclick="alert('Vue liste — à implémenter')">Liste</button>
+    </div>
+  </div>
+ 
+  <div class="filter-bar">
+    <button class="filter-chip active" onclick="setFilter('all',this)">Tous</button>
+    <button class="filter-chip" onclick="setFilter('vente',this)">Vente</button>
+    <button class="filter-chip" onclick="setFilter('location',this)">Location</button>
+    <button class="filter-chip" onclick="setFilter('maison',this)">Maisons</button>
+    <button class="filter-chip" onclick="setFilter('appartement',this)">Appartements</button>
+    <button class="filter-chip" onclick="setFilter('villa',this)">Villas</button>
+    <button class="filter-chip" onclick="setFilter('terrain',this)">Terrains</button>
+  </div>
+ 
+  <div class="listings">
+    <div class="grid" id="listings-grid"></div>
+  </div>
+ 
+  <!-- MAP SECTION -->
+  <section class="map-section" id="map-section">
+    <div class="section-header" style="padding-top:0;">
+      <div class="section-title">Carte interactive</div>
+    </div>
+    <div id="map-container">
+      <div id="map"></div>
+      <div class="map-legend">
+        <div class="legend-item"><div class="legend-dot dot-vente"></div> À vendre</div>
+        <div class="legend-item"><div class="legend-dot dot-location"></div> À louer</div>
+      </div>
+    </div>
+  </section>
+ 
+</div>
+ 
+<!-- ============ PAGE: PUBLISH ============ -->
+<div id="page-publish" class="page">
+  <!-- ACCESS DENIED (shown when not logged in) -->
+  <div id="access-denied-section" class="access-denied" style="display:none;">
+    <div class="access-denied-icon">🔒</div>
+    <h2>Accès restreint</h2>
+    <p>La publication d'annonces est réservée aux agents immobiliers et administrateurs agréés. Veuillez vous connecter pour continuer.</p>
+    <button class="btn-primary" style="max-width:260px;margin:0 auto;" onclick="openLogin()">
+      Se connecter comme Agent / Admin
+    </button>
+  </div>
+ 
+  <!-- PUBLISH FORM (shown when logged in as agent/admin) -->
+  <div id="publish-form-section" style="display:none;">
+    <div class="publish-page">
+      <div class="publish-header">
+        <div class="publish-badge" id="pub-role-badge">🏢 Agent</div>
+        <h1>Publier une annonce</h1>
+        <p>Remplissez le formulaire ci-dessous pour mettre votre bien en ligne. Les champs marqués <span style="color:var(--error)">*</span> sont obligatoires.</p>
+      </div>
+ 
+      <div class="success-banner" id="success-banner">
+        <span class="success-icon">✅</span>
+        <div>
+          <strong>Annonce publiée avec succès !</strong>
+          Votre bien est maintenant visible sur la plateforme.
+        </div>
+      </div>
+ 
+      <!-- INFOS GÉNÉRALES -->
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="form-card-icon">🏠</span>
+          <span class="form-card-title">Informations générales</span>
+        </div>
+        <div class="form-card-body">
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Type d'annonce <span>*</span></label>
+              <select id="pub-type">
+                <option value="">Sélectionner...</option>
+                <option value="vente">Vente</option>
+                <option value="location">Location</option>
+              </select>
+            </div>
+            <div class="form-group-pub">
+              <label>Catégorie de bien <span>*</span></label>
+              <select id="pub-cat">
+                <option value="">Sélectionner...</option>
+                <option value="villa">Villa</option>
+                <option value="maison">Maison</option>
+                <option value="appartement">Appartement</option>
+                <option value="studio">Studio</option>
+                <option value="terrain">Terrain</option>
+                <option value="local-commercial">Local commercial</option>
+                <option value="bureau">Bureau</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group-pub">
+            <label>Titre de l'annonce <span>*</span></label>
+            <input type="text" id="pub-title" placeholder="Ex: Villa contemporaine avec piscine à Pétion-Ville" maxlength="100" oninput="updateCharCount(this,'title-count',100)">
+            <div class="char-count"><span id="title-count">0</span>/100</div>
+          </div>
+          <div class="form-group-pub">
+            <label>Description complète <span>*</span></label>
+            <textarea id="pub-desc" placeholder="Décrivez le bien en détail : état, finitions, environnement, atouts..." maxlength="1000" oninput="updateCharCount(this,'desc-count',1000)"></textarea>
+            <div class="char-count"><span id="desc-count">0</span>/1000</div>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- LOCALISATION -->
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="form-card-icon">📍</span>
+          <span class="form-card-title">Localisation</span>
+        </div>
+        <div class="form-card-body">
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Département <span>*</span></label>
+              <select id="pub-dept">
+                <option value="">Sélectionner...</option>
+                <option>Ouest</option>
+                <option>Nord</option>
+                <option>Nord-Est</option>
+                <option>Nord-Ouest</option>
+                <option>Artibonite</option>
+                <option>Centre</option>
+                <option>Sud</option>
+                <option>Sud-Est</option>
+                <option>Nippes</option>
+                <option>Grande-Anse</option>
+              </select>
+            </div>
+            <div class="form-group-pub">
+              <label>Ville / Commune <span>*</span></label>
+              <input type="text" id="pub-city" placeholder="Ex: Port-au-Prince, Pétion-Ville...">
+            </div>
+          </div>
+          <div class="form-group-pub">
+            <label>Quartier / Adresse</label>
+            <input type="text" id="pub-address" placeholder="Ex: Laboule 12, Route de Delmas...">
+          </div>
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Latitude (GPS)</label>
+              <input type="number" id="pub-lat" placeholder="Ex: 18.5425" step="0.0001">
+            </div>
+            <div class="form-group-pub">
+              <label>Longitude (GPS)</label>
+              <input type="number" id="pub-lng" placeholder="Ex: -72.3322" step="0.0001">
+            </div>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- CARACTÉRISTIQUES -->
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="form-card-icon">📐</span>
+          <span class="form-card-title">Caractéristiques du bien</span>
+        </div>
+        <div class="form-card-body">
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Surface totale (m²) <span>*</span></label>
+              <input type="number" id="pub-area" placeholder="Ex: 250" min="1">
+            </div>
+            <div class="form-group-pub">
+              <label>Surface terrain (m²)</label>
+              <input type="number" id="pub-land" placeholder="Ex: 600" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Nombre de chambres</label>
+              <input type="number" id="pub-beds" placeholder="Ex: 4" min="0">
+            </div>
+            <div class="form-group-pub">
+              <label>Salles de bain</label>
+              <input type="number" id="pub-baths" placeholder="Ex: 3" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Étages</label>
+              <input type="number" id="pub-floors" placeholder="Ex: 2" min="0">
+            </div>
+            <div class="form-group-pub">
+              <label>Année de construction</label>
+              <input type="number" id="pub-year" placeholder="Ex: 2018" min="1900" max="2025">
+            </div>
+          </div>
+          <div class="form-group-pub">
+            <label>Équipements et commodités</label>
+            <div class="amenity-grid" id="amenity-grid"></div>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- PRIX -->
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="form-card-icon">💰</span>
+          <span class="form-card-title">Prix</span>
+        </div>
+        <div class="form-card-body">
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Prix <span>*</span></label>
+              <input type="number" id="pub-price" placeholder="Ex: 250000" min="0">
+            </div>
+            <div class="form-group-pub">
+              <label>Devise</label>
+              <select id="pub-currency">
+                <option value="USD">USD ($)</option>
+                <option value="HTG">HTG (Gourde)</option>
+                <option value="EUR">EUR (€)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group-pub" id="price-period-group">
+            <label>Période (pour location)</label>
+            <select id="pub-period">
+              <option value="mois">Par mois</option>
+              <option value="annee">Par année</option>
+              <option value="semaine">Par semaine</option>
+            </select>
+          </div>
+          <div class="form-group-pub">
+            <label>Prix négociable ?</label>
+            <select id="pub-negociable">
+              <option value="non">Non</option>
+              <option value="oui">Oui</option>
+            </select>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- PHOTOS -->
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="form-card-icon">📸</span>
+          <span class="form-card-title">Photos du bien</span>
+        </div>
+        <div class="form-card-body">
+          <div class="img-upload-area" id="upload-area">
+            <input type="file" class="img-upload-input" id="img-input" multiple accept="image/*" onchange="handleImgUpload(event)">
+            <div class="img-upload-icon">🖼️</div>
+            <div class="img-upload-text">
+              <strong>Glissez vos photos ici</strong> ou cliquez pour parcourir<br>
+              <span style="font-size:12px;color:var(--muted)">JPG, PNG — max 10 photos — 5 MB chacune</span>
+            </div>
+          </div>
+          <div class="img-preview-grid" id="img-preview"></div>
+        </div>
+      </div>
+ 
+      <!-- CONTACT AGENT -->
+      <div class="form-card">
+        <div class="form-card-header">
+          <span class="form-card-icon">📞</span>
+          <span class="form-card-title">Contact de l'agent</span>
+        </div>
+        <div class="form-card-body">
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Nom complet <span>*</span></label>
+              <input type="text" id="pub-agent-name" placeholder="Ex: Jean-Paul Dupont">
+            </div>
+            <div class="form-group-pub">
+              <label>Téléphone <span>*</span></label>
+              <input type="tel" id="pub-phone" placeholder="Ex: +509 3888-0000">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Email</label>
+              <input type="email" id="pub-email" placeholder="agent@agence.ht">
+            </div>
+            <div class="form-group-pub">
+              <label>Agence</label>
+              <input type="text" id="pub-agency" placeholder="Nom de l'agence">
+            </div>
+          </div>
+          <div class="form-group-pub">
+            <label>WhatsApp disponible ?</label>
+            <select id="pub-whatsapp">
+              <option value="oui">Oui</option>
+              <option value="non">Non</option>
+            </select>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- ADMIN ONLY -->
+      <div class="form-card" id="admin-only-section" style="display:none;">
+        <div class="form-card-header">
+          <span class="form-card-icon">⚙️</span>
+          <span class="form-card-title">Options administrateur</span>
+        </div>
+        <div class="form-card-body">
+          <div class="form-row">
+            <div class="form-group-pub">
+              <label>Statut de l'annonce</label>
+              <select id="pub-status">
+                <option value="publie">Publié immédiatement</option>
+                <option value="attente">En attente de validation</option>
+                <option value="archive">Archivé</option>
+              </select>
+            </div>
+            <div class="form-group-pub">
+              <label>Mise en avant</label>
+              <select id="pub-featured">
+                <option value="non">Non</option>
+                <option value="oui">Oui — Coup de cœur</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group-pub">
+            <label>Note interne (admin)</label>
+            <textarea id="pub-admin-note" placeholder="Notes visibles uniquement par l'équipe..." style="min-height:80px;"></textarea>
+          </div>
+        </div>
+      </div>
+ 
+      <div class="publish-actions">
+        <button class="btn-draft" onclick="showPage('home')">← Annuler</button>
+        <button class="btn-publish" onclick="submitPublish()">Publier l'annonce →</button>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ============ DETAIL MODAL ============ -->
+<div class="modal-overlay" id="detail-modal" onclick="closeDetailModal(event)">
+  <div class="modal">
+    <img class="modal-img" id="modal-img" src="" alt="">
+    <div class="modal-body">
+      <div class="modal-header">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;" id="modal-badge"></div>
+          <div style="font-family:'DM Serif Display',serif;font-size:24px;" id="modal-title"></div>
+          <div style="font-size:14px;color:var(--muted);margin-top:4px;" id="modal-location"></div>
+        </div>
+        <button class="modal-close" onclick="document.getElementById('detail-modal').classList.remove('open')">✕</button>
+      </div>
+      <div style="font-family:'DM Serif Display',serif;font-size:30px;margin-bottom:1rem;" id="modal-price"></div>
+      <p class="modal-desc" id="modal-desc"></p>
+      <div class="modal-features" id="modal-feats"></div>
+      <div class="modal-cta">
+        <button class="btn-primary">📞 Contacter l'agent</button>
+        <button class="btn-secondary">📅 Planifier une visite</button>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ============ LOGIN MODAL ============ -->
+<div class="login-modal-overlay" id="login-modal" onclick="closeLoginModal(event)">
+  <div class="login-modal">
+    <div class="login-header">
+      <button class="login-close-btn" onclick="document.getElementById('login-modal').classList.remove('open')">✕</button>
+      <div class="login-logo">KayHaïti</div>
+      <h2>Espace Professionnel</h2>
+      <p>Réservé aux agents et administrateurs</p>
+    </div>
+    <!-- <div class="login-body">
+      <div class="login-info">
+        <strong>🔐 Comptes de démonstration :</strong>
+        Admin — email: <code>admin@immohaiti.ht</code> / mdp: <code>admin123</code><br>
+        Agent — email: <code>agent@immohaiti.ht</code> / mdp: <code>agent123</code>
+      </div> -->
+ 
+      <div class="login-role-tabs">
+        <button class="role-tab active" onclick="setLoginRole('agent',this)">🏢 Agent immobilier</button>
+        <button class="role-tab" onclick="setLoginRole('admin',this)">⚙️ Administrateur</button>
+      </div>
+ 
+      <div class="login-error" id="login-error">Email ou mot de passe incorrect.</div>
+ 
+      <div class="form-group">
+        <label>Adresse email</label>
+        <input type="email" id="login-email" placeholder="votre@email.com">
+      </div>
+      <div class="form-group">
+        <label>Mot de passe</label>
+        <input type="password" id="login-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+ 
+      <button class="login-btn" onclick="doLogin()">Se connecter</button>
+ 
+      <p style="text-align:center;font-size:13px;color:var(--muted);margin-top:1rem;">
+        Problème de connexion ? <a href="#" style="color:var(--gold);">Contacter l'admin</a>
+      </p>
+    </div>
+  </div>
+</div>
+ 
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="logo">Kay<span>Haïti</span></span>
+      <p>Le portail immobilier de référence en Haïti. Trouvez, louez ou vendez votre bien en toute confiance.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Annonces</h4>
+      <a href="#">Vente</a>
+      <a href="#">Location</a>
+      <a href="#">Villas</a>
+      <a href="#">Terrains</a>
+    </div>
+    <div class="footer-col">
+      <h4>Services</h4>
+      <a href="#">Estimation</a>
+      <a href="#">Agences</a>
+      <a href="#">Conseils</a>
+      <a href="#">Financement</a>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <a href="#">Port-au-Prince</a>
+      <a href="#">+509 3888-0000</a>
+      <a href="#">info@immohaiti.ht</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 KayHaïti — Tous droits réservés</span>
+    <span>Politique de confidentialité · CGU</span>
+  </div>
+</footer>
