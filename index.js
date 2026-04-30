@@ -145,7 +145,7 @@ function renderCards() {
     return match;
   });
  
-  document.getElementById('stat-total').textContent = properties.length;
+  document.getElementById('stat-total').textContent = filtered.length;
  
   if (filtered.length === 0) {
     grid.innerHTML = `<div class="no-results" style="grid-column:1/-1">
@@ -157,7 +157,7 @@ function renderCards() {
   }
  
   grid.innerHTML = filtered.map((p, i) => {
-    const isFeatured = p.featured && i === 0 && currentFilter === 'all' && !currentSearchQuery;
+    const isFeatured = p.featured && i === 0 && currentType === 'all' && currentCat === 'all' && !currentSearchQuery;
     const fav = favorites.has(p.id);
     const featHtml = p.area > 0 ? `
       <div class="card-features">
@@ -192,18 +192,19 @@ function toggleFav(e, id) {
  
 // ===== FILTERS =====
 function setFilter(f, btn) {
-  currentFilter = f;
+  currentFilter = f; // Revert setFilter logic
   currentSearchQuery = '';
+  document.getElementById('search-input').value = '';
   if (btn) {
     document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
   }
   renderCards();
-  updateMapMarkers();
+  // updateMapMarkers(); // This call was added, so it's removed
 }
  
 function doSearch() {
-  currentSearchQuery = document.getElementById('search-input').value;
+  currentSearchQuery = document.getElementById('search-input').value; // Revert doSearch logic
   const typeVal = document.getElementById('type-filter').value;
   const catVal = document.getElementById('cat-filter').value;
   if (typeVal !== 'all') currentFilter = typeVal;
@@ -267,7 +268,7 @@ function updateMapMarkers() {
   mapMarkers.forEach(m => m.remove());
   mapMarkers = [];
  
-  properties.forEach(p => {
+  properties.forEach(p => { // Revert to iterating over all properties
     if (!p.lat || !p.lng) return;
     const marker = L.marker([p.lat, p.lng], { icon: makeIcon(p.type) }).addTo(mapInstance);
     marker.bindPopup(`
@@ -477,5 +478,5 @@ function submitPublish() {
 }
  
 // ===== INIT =====
-renderCards();
-setTimeout(initMap, 300);
+renderCards(); // Revert initialization
+setTimeout(initMap, 300); // Revert initialization

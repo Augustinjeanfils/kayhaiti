@@ -325,11 +325,11 @@ nav {
   display: none;
 }
 .login-error.show { display: block; }
-/* .login-info {
+ .login-info {
   background: #EEF7FF; border: 1px solid #B3D9F7; color: var(--info);
   padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 1rem;
   line-height: 1.5;
-} */
+} 
 .login-info strong { display: block; margin-bottom: 4px; }
  
 /* ===== PUBLISH PAGE ===== */
